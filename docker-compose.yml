@@ -1,0 +1,63 @@
+version: '3.1'
+services:
+
+  postgres_ad_ids:
+    container_name: ad_ids_db
+    image: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ad_ids_db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=12345
+      - POSTGRES_DB=ad_ids_db
+
+  postgres_ads:
+    container_name: ads_db
+    image: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - ads_db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=12345
+      - POSTGRES_DB=ads_db
+
+  kafdrop:
+    container_name: kafdrop
+    image: obsidiandynamics/kafdrop
+    restart: no
+    ports:
+      - "9000:9000"
+    environment:
+#      KAFKA_BROKERCONNECT: "kafka:9092"   # no work
+      KAFKA_BROKERCONNECT: "kafka:29092"
+      JVM_OPTS: "-Xms48M -Xmx96M -Xss250K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
+    depends_on:
+      - kafka
+
+  kafka:
+    container_name: kafka
+    image: obsidiandynamics/kafka
+    restart: no
+    ports:
+      - "2181:2181"
+      - "9092:9092"
+    environment:
+      KAFKA_LISTENERS: "INTERNAL://:29092,EXTERNAL://:9091,EXTERNAL2://:9092"
+      KAFKA_ADVERTISED_LISTENERS: "INTERNAL://kafka:29092,EXTERNAL://kafka:9091,EXTERNAL2://localhost:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,EXTERNAL2:PLAINTEXT"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "INTERNAL"
+      KAFKA_ZOOKEEPER_SESSION_TIMEOUT: "6000"
+      KAFKA_RESTART_ATTEMPTS: "10"
+      KAFKA_RESTART_DELAY: "5"
+      ZOOKEEPER_AUTOPURGE_PURGE_INTERVAL: "0"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
+volumes:
+  ad_ids_db_data:
+  ads_db_data:
+  kafka_data:
